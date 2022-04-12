@@ -14,6 +14,7 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#include <X11/extensions/shape.h>
 #include <X11/Xft/Xft.h>
 
 #include "drw.h"
@@ -745,6 +746,49 @@ setup(void)
 		}
 		grabfocus();
 	}
+	
+	if(cornerRadius < 0)
+		return;
+	else {
+		if(!win)
+			return;
+		
+		XWindowAttributes win_attr;
+		if(!XGetWindowAttributes(dpy, win, &win_attr))
+			return;
+		
+		int cornerDiameter = 2 * cornerRadius;
+		if(mw < cornerDiameter || mh < cornerDiameter)
+			return;
+		
+		Pixmap mask;
+		maks = XCreatePixmap(dpy, win, mw, mh, 1);
+		if(!mask)
+			return;
+		
+		XGCValues xgcv;
+		GC shape_gc;
+		shape_gc = XCreateGC(dpy, mask, 0, &xgcv);
+		if(!shape_gc) {
+			XFreePixmap(dpy, mask);
+			free(shape_gc);
+			return;
+		}
+		
+		XSetForeground(dpy, shape_gc, 0);
+		XFillRectangle(dpy, mask, shape_gc, 0, 0, mw, mh);
+		XSetForeground(dpy, shape_gc, 1);
+		XFillArc(dpy, mask, shape_gc, 0, 0, cornerDiameter, cornerDiameter, 0, 23040);
+		XFillArc(dpy, mask, shape_gc, (mw - cornerDiameter - 1), 0, cornerDiameter, cornerDiameter, 0, 23040);
+		XFillArc(dpy, mask, shape_gc, 0, (mh - cornerDiameter - 1), cornerDiameter, cornerDiameter, 0, 23040);
+		XFillArc(dpy, mask, shape_gc, (mw - cornerDiameter - 1), (mh - cornerDiameter - 1), cornerDiameter, cornerDiameter, 0, 23040);
+		XFillRectangle(dpy, mask, shape_gc, cornerRadius, 0, (mw - cornerDiameter), mh);
+		XFillRectangle(dpy, mask, shape_gc, 0, cornerRadius, mw, (mh - cornerDiameter));
+		XShapeCombineMask(dpy, win, ShapeBounding, 0, 0, mask, ShapeSet);
+		XFreePixmap(dpy, mask);
+		XFreeGC(dpy, shape_gc);
+	}
+	
 	drw_resize(drw, mw, mh);
 	drawmenu();
 }
