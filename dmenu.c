@@ -762,7 +762,7 @@ setup(void)
 			return;
 		
 		Pixmap mask;
-		maks = XCreatePixmap(dpy, win, mw, mh, 1);
+		mask = XCreatePixmap(dpy, win, mw, mh, 1);
 		if(!mask)
 			return;
 		
